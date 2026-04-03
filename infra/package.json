@@ -1,0 +1,25 @@
+{
+  "name": "@design-studio/infra",
+  "version": "0.1.0",
+  "main": "bin/app.js",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "synth": "cdk synth",
+    "deploy": "cdk deploy --all --require-approval never",
+    "deploy:dev": "cdk deploy --all --context environment=dev --require-approval never",
+    "deploy:prod": "cdk deploy --all --context environment=prod --require-approval never",
+    "destroy": "cdk destroy --all --force",
+    "destroy:dev": "cdk destroy --all --context environment=dev --force",
+    "diff": "cdk diff"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.140.0",
+    "constructs": "^10.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

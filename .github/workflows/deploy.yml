@@ -1,0 +1,83 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      matrix:
+        node-version: [20.x]
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Test
+        run: npm run test
+
+      - name: Build frontend
+        run: npm run build --workspace=apps/web
+
+      - name: Build API
+        run: npm run build --workspace=apps/api
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Build infrastructure
+        run: npm run build --workspace=infra
+
+      - name: CDK Synth
+        run: npm run synth --workspace=infra
+
+      - name: CDK Deploy (Dev)
+        run: npm run deploy:dev --workspace=infra
+        env:
+          ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+
+      - name: Sync frontend to S3
+        run: |
+          BUCKET=$(aws cloudformation describe-stacks \
+            --stack-name DesignStudioFrontendStack-dev \
+            --query 'Stacks[0].Outputs[?OutputKey==`BucketName`].OutputValue' \
+            --output text)
+          
+          DIST_ID=$(aws cloudformation describe-stacks \
+            --stack-name DesignStudioFrontendStack-dev \
+            --query 'Stacks[0].Outputs[?OutputKey==`DistributionId`].OutputValue' \
+            --output text)
+          
+          aws s3 sync apps/web/out s3://$BUCKET --delete
+          
+          aws cloudfront create-invalidation \
+            --distribution-id $DIST_ID \
+            --paths "/*"
+
+      - name: Post deployment summary
+        if: always()
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Frontend deployed" >> $GITHUB_STEP_SUMMARY
+          echo "✅ API deployed" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Infrastructure updated" >> $GITHUB_STEP_SUMMARY

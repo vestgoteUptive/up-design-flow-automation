@@ -1,0 +1,146 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Design Studio API - SAM Template
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: nodejs20.x
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        DYNAMODB_TABLE: !Ref DynamoDBTable
+        DYNAMODB_ENDPOINT: !If [IsLocal, 'http://host.docker.internal:8000', '']
+        JWT_SECRET: !Sub '{{resolve:secretsmanager:${JWTSecret}:SecretString:key}}'
+        BEDROCK_MODEL_ID: claude-sonnet-4-20250514
+
+Conditions:
+  IsLocal: !Equals [!Ref AWS::Region, 'us-east-1-local']
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
+Resources:
+  # DynamoDB Table
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'design-studio-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  # API Gateway
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Environment
+      TracingEnabled: true
+      MethodSettings:
+        - ResourcePath: '/*'
+          HttpMethod: '*'
+          LoggingLevel: INFO
+          DataTraceEnabled: true
+          MetricsEnabled: true
+      Cors:
+        AllowOrigin: '*'
+        AllowMethods: 'GET,POST,PUT,DELETE,PATCH,OPTIONS'
+        AllowHeaders: 'Content-Type,Authorization'
+
+  # Main Lambda Function
+  ApiHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'design-studio-api-${Environment}'
+      CodeUri: .
+      Handler: dist/index.handler
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: '/{proxy+}'
+            Method: ANY
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamoDBTable
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+              Resource: !Sub 'arn:aws:bedrock:${AWS::Region}::model/anthropic.claude-sonnet-4-20250514-v1:0'
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:*'
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: 'arn:aws:logs:*:*:*'
+
+  # JWT Secret in Secrets Manager
+  JWTSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub 'design-studio/jwt-secret-${Environment}'
+      Description: JWT signing secret
+      GenerateSecretString:
+        SecretStringTemplate: '{"key": "placeholder"}'
+        GenerateStringKey: key
+        PasswordLength: 32
+
+  # CloudWatch Log Group
+  ApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/design-studio-api-${Environment}'
+      RetentionInDays: 30
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+
+  DynamoDBTable:
+    Description: DynamoDB table name
+    Value: !Ref DynamoDBTable
+
+  ApiFunction:
+    Description: API Lambda function name
+    Value: !Ref ApiHandler

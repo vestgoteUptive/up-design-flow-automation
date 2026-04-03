@@ -1,0 +1,21 @@
+{
+  "name": "@design-studio/db",
+  "version": "0.1.0",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.665.0",
+    "@aws-sdk/lib-dynamodb": "^3.665.0",
+    "@aws-sdk/util-dynamodb": "^3.665.0",
+    "@design-studio/types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^1.6.0"
+  }
+}

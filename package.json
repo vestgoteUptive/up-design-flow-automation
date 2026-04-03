@@ -1,0 +1,32 @@
+{
+  "name": "design-studio",
+  "version": "0.1.0",
+  "description": "AI-powered design system component generator",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "apps/api",
+    "infra",
+    "packages/types",
+    "packages/db"
+  ],
+  "scripts": {
+    "dev:local": "docker-compose up -d && sleep 5 && pnpm run setup:local && echo '✓ Local environment ready. Run: cd apps/web && pnpm dev'",
+    "dev:down": "docker-compose down",
+    "setup:local": "node scripts/setup-local-db.js",
+    "build": "pnpm --recursive build",
+    "build:web": "pnpm --filter=web build",
+    "build:api": "pnpm --filter=api build",
+    "build:infra": "pnpm --filter=infra build",
+    "test": "pnpm --recursive test",
+    "lint": "pnpm --recursive lint",
+    "typecheck": "pnpm --recursive typecheck",
+    "clean": "pnpm --recursive clean && rm -rf node_modules",
+    "start:web": "cd apps/web && pnpm dev",
+    "start:api": "cd apps/api && pnpm dev",
+    "start:infra": "cd infra && pnpm synth"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}
