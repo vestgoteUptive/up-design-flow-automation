@@ -101,26 +101,16 @@ export class ApiStack extends cdk.Stack {
       },
     })
 
-    // CORS configuration
-    const corsPreflight = {
-      allowOrigins: apigateway.Cors.ALL_ORIGINS,
-      allowMethods: apigateway.Cors.ALL_METHODS,
-      allowHeaders: ['Content-Type', 'Authorization', 'X-Amz-Date'],
-    }
-
     // Root resource proxies to Lambda
     const proxy = this.api.root.addResource('{proxy+}')
     proxy.addMethod('ANY', new apigateway.LambdaIntegration(this.handler), {
-      defaultCorsPreflightOptions: corsPreflight,
+      methodResponses: [{ statusCode: '200' }],
     })
 
     // Health check endpoint
     this.api.root.addMethod('GET', new apigateway.LambdaIntegration(this.handler), {
-      defaultCorsPreflightOptions: corsPreflight,
+      methodResponses: [{ statusCode: '200' }],
     })
-
-    // Lambda reserved concurrency (prevent runaway costs)
-    this.handler.addAutoScaling({ maxCapacity: 10 })
 
     // Outputs
     new cdk.CfnOutput(this, 'ApiEndpoint', {

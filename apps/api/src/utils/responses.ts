@@ -42,7 +42,7 @@ export function errorResponse(
     error: {
       code,
       message,
-      ...(details && { details }),
+      ...((details as Record<string, unknown>) && { details }),
     },
     timestamp: new Date().toISOString(),
   }

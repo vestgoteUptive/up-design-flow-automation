@@ -11,16 +11,16 @@
     "sam:build": "sam build"
   },
   "dependencies": {
-    "@aws-sdk/client-bedrock-runtime": "^3.665.0",
-    "@aws-sdk/client-github": "^3.665.0",
-    "@aws-sdk/client-secretsmanager": "^3.665.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.605.0",
     "@design-studio/db": "workspace:*",
     "@design-studio/types": "workspace:*",
+    "@octokit/rest": "^20.0.2",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.1.2",
+    "jsonwebtoken": "^9.0.3",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
+    "@types/aws-lambda": "^8.10.38",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22.10.2",

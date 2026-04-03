@@ -3,10 +3,10 @@
  * Signs, verifies, and decodes tokens
  */
 
-import jwt from 'jsonwebtoken'
+import jwt, { SignOptions } from 'jsonwebtoken'
 import type { SessionData } from '@design-studio/types'
 
-const secret = process.env.JWT_SECRET
+const secret: string = process.env.JWT_SECRET || ''
 if (!secret) {
   throw new Error('JWT_SECRET environment variable is required')
 }
@@ -15,8 +15,8 @@ if (!secret) {
  * Sign a JWT token
  */
 export function signToken(data: SessionData): string {
-  const expiresIn = process.env.JWT_EXPIRY || '7d'
-  return jwt.sign(data, secret, { expiresIn })
+  const expiresIn = (process.env.JWT_EXPIRY || '7d') as string
+  return jwt.sign(data, secret, { expiresIn } as SignOptions)
 }
 
 /**
@@ -24,7 +24,11 @@ export function signToken(data: SessionData): string {
  */
 export function verifyToken(token: string): SessionData | null {
   try {
-    return jwt.verify(token, secret) as SessionData
+    const payload = jwt.verify(token, secret)
+    if (typeof payload !== 'object' || payload === null) {
+      return null
+    }
+    return payload as SessionData
   } catch {
     return null
   }
