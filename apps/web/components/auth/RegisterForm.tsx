@@ -41,7 +41,7 @@ export function RegisterForm() {
     setLoading(true)
 
     try {
-      await api.auth.register({ email, password, name, role })
+      await api.auth.register(email, name, password)
       router.push('/projects')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed')

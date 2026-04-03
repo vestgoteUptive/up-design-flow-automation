@@ -18,7 +18,7 @@ export function LoginForm() {
     setLoading(true)
 
     try {
-      await api.auth.login({ email, password })
+      await api.auth.login(email, password)
       router.push('/projects')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')

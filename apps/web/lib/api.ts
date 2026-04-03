@@ -1,8 +1,9 @@
 /**
- * API client for frontend
- * Handles all HTTP communication with the backend
+ * API client using KY HTTP library
+ * Handles all HTTP communication with automatic authentication
  */
 
+import ky from 'ky'
 import type {
   User,
   Project,
@@ -14,111 +15,98 @@ import type {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
-/**
- * HTTP response wrapper
- */
-interface ApiResponse<T> {
-  data?: T
-  error?: {
-    code: string
-    message: string
-    details?: unknown
-  }
-  timestamp: string
+// ============================================================================
+// TOKEN MANAGEMENT
+// ============================================================================
+
+function getStoredToken(): string | null {
+  if (typeof window === 'undefined') return null
+  return localStorage.getItem('auth_token')
 }
 
-/**
- * Handle API errors
- */
-function handleError(error: unknown): never {
-  if (error instanceof TypeError && error.message === 'Failed to fetch') {
-    throw new Error('Network error: Could not reach the API')
-  }
-
-  if (error instanceof Error) {
-    throw error
-  }
-
-  throw new Error('An unexpected error occurred')
+function setStoredToken(token: string): void {
+  if (typeof window === 'undefined') return
+  localStorage.setItem('auth_token', token)
 }
 
-/**
- * Make authenticated request
- */
-async function request<T>(
-  method: string,
-  path: string,
-  body?: unknown,
-  token?: string,
-): Promise<ApiResponse<T>> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  }
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`
-  }
-
-  try {
-    const response = await fetch(`${API_URL}${path}`, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-    })
-
-    const data: ApiResponse<T> = await response.json()
-
-    if (!response.ok) {
-      throw new Error(data.error?.message || `HTTP ${response.status}`)
-    }
-
-    return data
-  } catch (error) {
-    handleError(error)
-  }
+function clearStoredToken(): void {
+  if (typeof window === 'undefined') return
+  localStorage.removeItem('auth_token')
 }
+
+// ============================================================================
+// KY CLIENT WITH INTERCEPTORS
+// ============================================================================
+
+const kyClient = ky.create({
+  prefixUrl: API_URL,
+  hooks: {
+    beforeRequest: [
+      (request) => {
+        const token = getStoredToken()
+        if (token) {
+          request.headers.set('Authorization', `Bearer ${token}`)
+        }
+      },
+    ],
+    afterResponse: [
+      async (request, options, response) => {
+        if (response.status === 401) {
+          clearStoredToken()
+          // Could redirect to login here
+          // window.location.href = '/login'
+        }
+      },
+    ],
+  },
+})
 
 // ============================================================================
 // AUTH ENDPOINTS
 // ============================================================================
 
 export const auth = {
-  /**
-   * Register a new user
-   */
   async register(email: string, name: string, password: string): Promise<{
     accessToken: string
     user: Omit<User, 'passwordHash'>
   }> {
-    const response = await request<{ accessToken: string; user: Omit<User, 'passwordHash'> }>(
-      'POST',
-      '/auth/register',
-      { email, name, password },
-    )
-    return response.data!
+    const response = await kyClient
+      .post('auth/register', {
+        json: { email, name, password },
+      })
+      .json<{ accessToken: string; user: Omit<User, 'passwordHash'> }>()
+
+    if (response.accessToken) {
+      setStoredToken(response.accessToken)
+    }
+    return response
   },
 
-  /**
-   * Login with email and password
-   */
   async login(email: string, password: string): Promise<{
     accessToken: string
     user: Omit<User, 'passwordHash'>
   }> {
-    const response = await request<{ accessToken: string; user: Omit<User, 'passwordHash'> }>(
-      'POST',
-      '/auth/login',
-      { email, password },
-    )
-    return response.data!
+    const response = await kyClient
+      .post('auth/login', {
+        json: { email, password },
+      })
+      .json<{ accessToken: string; user: Omit<User, 'passwordHash'> }>()
+
+    if (response.accessToken) {
+      setStoredToken(response.accessToken)
+    }
+    return response
   },
 
-  /**
-   * Verify current session
-   */
-  async getSession(token: string): Promise<{ session: SessionData }> {
-    const response = await request<{ session: SessionData }>('GET', '/auth/session', undefined, token)
-    return response.data!
+  async getSession(): Promise<SessionData> {
+    const response = await kyClient
+      .get('auth/session')
+      .json<{ session: SessionData }>()
+    return response.session
+  },
+
+  logout(): void {
+    clearStoredToken()
   },
 }
 
@@ -127,52 +115,33 @@ export const auth = {
 // ============================================================================
 
 export const projects = {
-  /**
-   * Create a new project
-   */
-  async create(
-    token: string,
-    data: {
-      name: string
-      description?: string
-      agentInstructions?: string
-      githubRepoUrl?: string
-      githubBranch?: string
-    },
-  ): Promise<Project> {
-    const response = await request<Project>('POST', '/projects', data, token)
-    return response.data!
+  async create(data: {
+    name: string
+    description?: string
+    agentInstructions?: string
+    githubRepoUrl?: string
+    githubBranch?: string
+  }): Promise<Project> {
+    return kyClient.post('projects', { json: data }).json<Project>()
   },
 
-  /**
-   * Get all projects
-   */
-  async list(token: string): Promise<Project[]> {
-    const response = await request<{ projects: Project[] }>('GET', '/projects', undefined, token)
-    return response.data?.projects || []
+  async list(): Promise<Project[]> {
+    const response = await kyClient
+      .get('projects')
+      .json<{ projects: Project[] }>()
+    return response.projects || []
   },
 
-  /**
-   * Get a specific project
-   */
-  async get(token: string, projectId: string): Promise<Project> {
-    const response = await request<Project>('GET', `/projects/${projectId}`, undefined, token)
-    return response.data!
+  async get(projectId: string): Promise<Project> {
+    return kyClient.get(`projects/${projectId}`).json<Project>()
   },
 
-  /**
-   * Update a project
-   */
-  async update(token: string, projectId: string, data: Partial<Project>): Promise<Project> {
-    const response = await request<Project>('PUT', `/projects/${projectId}`, data, token)
-    return response.data!
+  async update(projectId: string, data: Partial<Project>): Promise<Project> {
+    return kyClient.put(`projects/${projectId}`, { json: data }).json<Project>()
   },
 
-  /**
-   * Delete a project
-   */
-  async delete(token: string, projectId: string): Promise<void> {
-    await request('DELETE', `/projects/${projectId}`, undefined, token)
+  async delete(projectId: string): Promise<void> {
+    await kyClient.delete(`projects/${projectId}`)
   },
 }
 
@@ -181,143 +150,76 @@ export const projects = {
 // ============================================================================
 
 export const ideas = {
-  /**
-   * Create a new idea
-   */
   async create(
-    token: string,
     projectId: string,
     data: {
-      sourceType: 'FIGMA' | 'URL' | 'PROMPT'
-      sourceData: unknown
-      userPrompt?: string
+      title: string
+      description?: string
+      source: 'figma' | 'url' | 'prompt'
+      sourceData: string
     },
   ): Promise<Idea> {
-    const response = await request<Idea>('POST', `/projects/${projectId}/ideas`, data, token)
-    return response.data!
+    return kyClient
+      .post(`projects/${projectId}/ideas`, { json: data })
+      .json<Idea>()
   },
 
-  /**
-   * Get all ideas in a project
-   */
-  async list(token: string, projectId: string): Promise<Idea[]> {
-    const response = await request<{ ideas: Idea[] }>(
-      'GET',
-      `/projects/${projectId}/ideas`,
-      undefined,
-      token,
-    )
-    return response.data?.ideas || []
+  async list(projectId: string): Promise<Idea[]> {
+    const response = await kyClient
+      .get(`projects/${projectId}/ideas`)
+      .json<{ ideas: Idea[] }>()
+    return response.ideas || []
   },
 
-  /**
-   * Get a specific idea
-   */
-  async get(token: string, projectId: string, ideaId: string): Promise<Idea> {
-    const response = await request<Idea>(
-      'GET',
-      `/projects/${projectId}/ideas/${ideaId}`,
-      undefined,
-      token,
-    )
-    return response.data!
+  async get(projectId: string, ideaId: string): Promise<Idea> {
+    return kyClient
+      .get(`projects/${projectId}/ideas/${ideaId}`)
+      .json<Idea>()
   },
 
-  /**
-   * Update an idea
-   */
-  async update(token: string, projectId: string, ideaId: string, data: Partial<Idea>): Promise<Idea> {
-    const response = await request<Idea>(
-      'PUT',
-      `/projects/${projectId}/ideas/${ideaId}`,
-      data,
-      token,
-    )
-    return response.data!
-  },
-
-  /**
-   * Delete an idea
-   */
-  async delete(token: string, projectId: string, ideaId: string): Promise<void> {
-    await request('DELETE', `/projects/${projectId}/ideas/${ideaId}`, undefined, token)
-  },
-
-  /**
-   * Generate iteration via Bedrock
-   */
-  async iterate(token: string, projectId: string, ideaId: string, prompt: string): Promise<Iteration> {
-    const response = await request<Iteration>(
-      'POST',
-      `/projects/${projectId}/ideas/${ideaId}/iterate`,
-      { prompt },
-      token,
-    )
-    return response.data!
+  async delete(projectId: string, ideaId: string): Promise<void> {
+    await kyClient.delete(`projects/${projectId}/ideas/${ideaId}`)
   },
 }
 
 // ============================================================================
-// PROMOTION/GALLERY ENDPOINTS
+// GALLERY ENDPOINTS
 // ============================================================================
 
 export const gallery = {
-  /**
-   * Promote an idea to production
-   */
-  async promote(token: string, ideaId: string, projectId: string): Promise<Promotion> {
-    const response = await request<Promotion>(
-      'POST',
-      `/ideas/${ideaId}/promote`,
-      { projectId },
-      token,
-    )
-    return response.data!
+  async list(): Promise<Project[]> {
+    const response = await kyClient
+      .get('gallery')
+      .json<{ projects: Project[] }>()
+    return response.projects || []
   },
 
-  /**
-   * Get promotion status
-   */
-  async getPromotion(token: string, ideaId: string): Promise<Promotion> {
-    const response = await request<Promotion>(
-      'GET',
-      `/ideas/${ideaId}/promotion`,
-      undefined,
-      token,
-    )
-    return response.data!
+  async getPromotions(ideaId: string): Promise<Promotion[]> {
+    const response = await kyClient
+      .get(`ideas/${ideaId}/promotions`)
+      .json<{ promotions: Promotion[] }>()
+    return response.promotions || []
   },
 
-  /**
-   * List all promotions
-   */
-  async listPromotions(token: string, status?: string): Promise<Promotion[]> {
-    const url = `/promotions${status ? `?status=${status}` : ''}`
-    const response = await request<{ promotions: Promotion[] }>(
-      'GET',
-      url,
-      undefined,
-      token,
-    )
-    return response.data?.promotions || []
-  },
-
-  /**
-   * Update promotion status
-   */
   async updatePromotion(
-    token: string,
     ideaId: string,
     data: Partial<Promotion>,
   ): Promise<Promotion> {
-    const response = await request<Promotion>(
-      'PATCH',
-      `/ideas/${ideaId}/promotion`,
-      data,
-      token,
-    )
-    return response.data!
+    return kyClient
+      .patch(`ideas/${ideaId}/promotion`, { json: data })
+      .json<Promotion>()
   },
+}
+
+// ============================================================================
+// API NAMESPACE (for convenience)
+// ============================================================================
+
+export const api = {
+  auth,
+  projects,
+  ideas,
+  gallery,
 }
 
 // ============================================================================
@@ -326,7 +228,7 @@ export const gallery = {
 
 export async function healthCheck(): Promise<boolean> {
   try {
-    const response = await fetch(`${API_URL}/health`)
+    const response = await kyClient.get('health')
     return response.ok
   } catch {
     return false

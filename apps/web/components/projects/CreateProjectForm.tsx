@@ -29,7 +29,7 @@ export function CreateProjectForm() {
     setLoading(true)
 
     try {
-      const project = await api.projects.create({ name, description, color })
+      const project = await api.projects.create({ name, description })
       router.push(`/projects/${project.id}/studio`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create project')
