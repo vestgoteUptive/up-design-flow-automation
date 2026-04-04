@@ -44,10 +44,10 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Build infrastructure
-        run: pnpm build --filter=infra
+        run: pnpm --filter=@design-studio/infra build
 
       - name: CDK Destroy
-        run: pnpm destroy:${{ github.event.inputs.environment }} --filter=infra
+        run: pnpm --filter=@design-studio/infra destroy:${{ github.event.inputs.environment }}
         env:
           ENVIRONMENT: ${{ github.event.inputs.environment }}
 
