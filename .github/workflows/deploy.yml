@@ -38,10 +38,10 @@ jobs:
         run: pnpm test
 
       - name: Build frontend
-        run: pnpm build --filter=apps/web
+        run: pnpm --filter=web build
 
       - name: Build API
-        run: pnpm build --filter=apps/api
+        run: pnpm --filter=@design-studio/api build
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -50,13 +50,13 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Build infrastructure
-        run: pnpm build --filter=infra
+        run: pnpm --filter=@design-studio/infra build
 
       - name: CDK Synth
-        run: pnpm synth --filter=infra
+        run: pnpm --filter=@design-studio/infra synth
 
       - name: CDK Deploy (Dev)
-        run: pnpm deploy:dev --filter=infra
+        run: pnpm --filter=@design-studio/infra deploy:dev
         env:
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
 
