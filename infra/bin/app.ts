@@ -49,7 +49,7 @@ const budgetStack = new BudgetStack(app, `DesignStudioBudgetStack-${environment}
   bedrockMonthlyBudget: environment === 'prod' ? 100 : 50,
   env: {
     account: process.env.CDK_DEFAULT_ACCOUNT || process.env.AWS_ACCOUNT_ID,
-    region: process.env.CDK_DEFAULT_REGION || process.env.AWS_REGION || 'eu-north-1',
+    region: 'us-east-1', // AWS Budgets resources must be in us-east-1
   },
 })
 
