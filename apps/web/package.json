@@ -11,18 +11,18 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@types/uuid": "^9.0.8",
     "clsx": "^2.1.1",
     "ky": "^1.14.3",
     "next": "^14.2.35",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "swr": "^2.2.5",
-    "tailwind-merge": "^3.5.0"
+    "tailwind-merge": "^3.5.0",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.1",
-    "eslint": "^8.57.0",
-    "eslint-config-next": "^14.2.35",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.1.0",
     "@types/node": "^22.10.2",
@@ -30,6 +30,8 @@
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.35",
     "happy-dom": "^20.8.9",
     "jsdom": "^29.0.1",
     "postcss": "^8.4.49",
