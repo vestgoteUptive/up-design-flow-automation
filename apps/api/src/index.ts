@@ -45,6 +45,16 @@ import {
   publishComponentHandler,
   publishHistoryHandler,
 } from './handlers/publish'
+import {
+  getIngestionResultsHandler,
+  getIngestionComponentHandler,
+  selectComponentsHandler,
+  startIngestionSessionHandler,
+  regenerateComponentHandler,
+  listComponentsHandler,
+  getComponentsNeedingUpdateHandler,
+  getProjectTokensHandler,
+} from './handlers/ingestion'
 
 /**
  * Main Lambda handler
@@ -90,6 +100,16 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
   // Publish routes
   if (path === '/publish' && httpMethod === 'POST') return publishComponentHandler(event)
   if (path.match(/^\/ideas\/[^/]+\/publish\/history$/) && httpMethod === 'GET') return publishHistoryHandler(event)
+
+  // Ingestion & Tracking routes
+  if (path.match(/^\/projects\/[^/]+\/ingestion$/) && httpMethod === 'GET') return getIngestionResultsHandler(event)
+  if (path.match(/^\/projects\/[^/]+\/ingestion\/[^/]+$/) && httpMethod === 'GET') return getIngestionComponentHandler(event)
+  if (path.match(/^\/projects\/[^/]+\/ingestion\/select$/) && httpMethod === 'POST') return selectComponentsHandler(event)
+  if (path.match(/^\/projects\/[^/]+\/ingestion\/session$/) && httpMethod === 'POST') return startIngestionSessionHandler(event)
+  if (path.match(/^\/projects\/[^/]+\/components\/needs-update$/) && httpMethod === 'GET') return getComponentsNeedingUpdateHandler(event)
+  if (path.match(/^\/projects\/[^/]+\/components$/) && httpMethod === 'GET') return listComponentsHandler(event)
+  if (path.match(/^\/projects\/[^/]+\/components\/[^/]+\/regenerate$/) && httpMethod === 'POST') return regenerateComponentHandler(event)
+  if (path.match(/^\/projects\/[^/]+\/tokens$/) && httpMethod === 'GET') return getProjectTokensHandler(event)
 
   // Health check
   if (path === '/health' && httpMethod === 'GET') {

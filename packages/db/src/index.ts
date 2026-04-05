@@ -47,3 +47,10 @@ export {
   createPromotion,
   updatePromotion,
 } from './repositories-promotions'
+
+// Ingestion & Tracking repositories (class-based)
+export { IngestedComponentsRepository } from './repositories-ingested-components'
+export { ComponentGenerationRepository } from './repositories-component-generation'
+export { DesignTokensRepository, ComponentTokensRepository } from './repositories-design-tokens'
+export { ComponentDependenciesRepository } from './repositories-component-dependencies'
+export { IngestionSessionsRepository } from './repositories-ingestion-sessions'

@@ -11,6 +11,9 @@ import type {
   Iteration,
   Promotion,
   SessionData,
+  IngestedComponent,
+  ComponentGeneration,
+  DesignToken,
 } from '@design-studio/types'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
@@ -212,6 +215,66 @@ export const gallery = {
 }
 
 // ============================================================================
+// INGESTION API (design import & tracking)
+// ============================================================================
+
+const ingestion = {
+  async getComponents(projectId: string): Promise<IngestedComponent[]> {
+    const response = await kyClient
+      .get(`projects/${projectId}/ingestion`)
+      .json<{ components: IngestedComponent[] }>()
+    return response.components || []
+  },
+
+  async getComponent(projectId: string, componentId: string): Promise<IngestedComponent> {
+    return kyClient
+      .get(`projects/${projectId}/ingestion/${componentId}`)
+      .json<IngestedComponent>()
+  },
+
+  async selectComponents(projectId: string, componentIds: string[]): Promise<{ selectedCount: number }> {
+    return kyClient
+      .post(`projects/${projectId}/ingestion/select`, { json: { componentIds } })
+      .json<{ selectedCount: number }>()
+  },
+
+  async startSession(projectId: string, sourceType: string, sourceData: unknown): Promise<{ id: string }> {
+    return kyClient
+      .post(`projects/${projectId}/ingestion/session`, { json: { sourceType, sourceData } })
+      .json<{ id: string }>()
+  },
+
+  async listComponents(projectId: string): Promise<Array<IngestedComponent & { latestGeneration?: ComponentGeneration }>> {
+    const response = await kyClient
+      .get(`projects/${projectId}/components`)
+      .json<{ components: Array<IngestedComponent & { latestGeneration?: ComponentGeneration }> }>()
+    return response.components || []
+  },
+
+  async getComponentsNeedingUpdate(
+    projectId: string,
+  ): Promise<Array<IngestedComponent & { latestGeneration?: ComponentGeneration }>> {
+    const response = await kyClient
+      .get(`projects/${projectId}/components/needs-update`)
+      .json<{ components: Array<IngestedComponent & { latestGeneration?: ComponentGeneration }> }>()
+    return response.components || []
+  },
+
+  async regenerateComponent(projectId: string, componentId: string): Promise<{ newVersion: number }> {
+    return kyClient
+      .post(`projects/${projectId}/components/${componentId}/regenerate`)
+      .json<{ newVersion: number }>()
+  },
+
+  async getTokens(projectId: string): Promise<DesignToken[]> {
+    const response = await kyClient
+      .get(`projects/${projectId}/tokens`)
+      .json<{ tokens: DesignToken[] }>()
+    return response.tokens || []
+  },
+}
+
+// ============================================================================
 // API NAMESPACE (for convenience)
 // ============================================================================
 
@@ -220,6 +283,7 @@ export const api = {
   projects,
   ideas,
   gallery,
+  ingestion,
 }
 
 // ============================================================================

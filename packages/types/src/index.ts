@@ -7,6 +7,11 @@ export type SourceType = 'FIGMA' | 'URL' | 'PROMPT'
 export type IdeaStatus = 'DRAFT' | 'REVIEWED'
 export type PromotionStatus = 'BUILDING' | 'PR_OPEN' | 'VERIFIED' | 'PUBLISHED' | 'FAILED'
 
+// Ingestion & Tracking
+export type IngestionStatus = 'DISCOVERED' | 'INGESTED' | 'SELECTED' | 'GENERATING' | 'GENERATED' | 'PUBLISHED' | 'NEEDS_UPDATE' | 'REGENERATING' | 'DEPRECATED'
+export type DesignTokenType = 'COLOR' | 'TYPOGRAPHY' | 'SPACING' | 'SHADOW' | 'BORDER_RADIUS' | 'OPACITY'
+export type ComponentDependencyType = 'CHILD' | 'RELATED' | 'USES_TOKEN' | 'SIBLING'
+
 /**
  * User entity - represents an authenticated user
  */
@@ -167,4 +172,102 @@ export interface SessionData {
   email: string
   name: string
   expiresAt: string
+}
+
+/**
+ * IngestedComponent - Raw discovery result from Design Importer agent
+ */
+export interface IngestedComponent {
+  id: string
+  projectId: string
+  ingestionId: string // FK to Idea (ingestion session)
+  name: string
+  description?: string
+  sourceType: SourceType
+  sourceData: FigmaSource | UrlSource | PromptSource
+  previewUrl?: string
+  complexityScore: number // 1-10, affects generation time estimate
+  tokensUsed: string[] // List of design token IDs referenced
+  childComponentIds?: string[] // For hierarchical components
+  status: IngestionStatus
+  ingestedAt: string
+  metadata?: Record<string, unknown> // Additional properties from analysis
+}
+
+/**
+ * ComponentGeneration - Link between ingested component and generated code + version history
+ */
+export interface ComponentGeneration {
+  id: string
+  ingestedComponentId: string
+  version: number // 1, 2, 3... (v1, v2, v3)
+  status: IngestionStatus
+  generatedCode: {
+    component: string // TSX component file
+    types: string // TypeScript types file
+    stories: string // Storybook stories file
+    exports: string // Barrel export file
+  }
+  generatedAt: string
+  sourceUpdatedAt?: string // When original Figma/source was last modified
+  regeneratedAt?: string // Last time component was regenerated
+  versionHistory: VersionHistoryEntry[]
+}
+
+export interface VersionHistoryEntry {
+  version: number
+  generatedAt: string
+  notes?: string // e.g., "Updated after Figma changes"
+  changedTokens?: string[] // Which tokens changed in this version
+}
+
+/**
+ * DesignToken - Extracted design token (color, typography, spacing, etc.)
+ */
+export interface DesignToken {
+  id: string
+  projectId: string
+  type: DesignTokenType
+  name: string // e.g., "primary-blue", "body-text", "spacing-16"
+  value: string // e.g., "#0066FF", "16px Roboto", "16px"
+  description?: string
+  sourceId?: string // e.g., Figma node ID
+  extractedAt: string
+  usageCount: number // How many components use this token
+}
+
+/**
+ * ComponentToken - Many-to-many relationship: which components use which tokens
+ */
+export interface ComponentToken {
+  componentId: string // IngestedComponent or ComponentGeneration ID
+  tokenId: string
+  usageCount: number // How many times token is used in this component
+}
+
+/**
+ * ComponentDependency - Component hierarchy and relationships
+ */
+export interface ComponentDependency {
+  componentId: string
+  dependsOnId: string
+  dependencyType: ComponentDependencyType
+  description?: string // e.g., "uses this as child", "inherits styling from"
+}
+
+/**
+ * IngestionSession - Tracks a design ingestion operation
+ */
+export interface IngestionSession {
+  id: string // Same as Idea ID for ingestion
+  projectId: string
+  createdById: string
+  sourceType: SourceType
+  sourceData: FigmaSource | UrlSource | PromptSource
+  totalComponentsFound: number
+  selectedForGeneration: number
+  status: 'IN_PROGRESS' | 'COMPLETED' | 'FAILED'
+  startedAt: string
+  completedAt?: string
+  errorMessage?: string
 }
