@@ -5,7 +5,6 @@
     "exclude": ["README.md", "cdk*.json", "**/*.d.ts"]
   },
   "context": {
-    "@aws-cdk/core:enableStackNameDuplicates": true,
     "availability-zones:account=unknown:region=unknown": ["unknown1a", "unknown1b", "unknown1c"],
     "environment": "dev"
   }
