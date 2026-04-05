@@ -4,6 +4,7 @@
 
 import * as cdk from 'aws-cdk-lib'
 import * as lambda from 'aws-cdk-lib/aws-lambda'
+import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs'
 import * as apigateway from 'aws-cdk-lib/aws-apigateway'
 import * as iam from 'aws-cdk-lib/aws-iam'
 import * as logs from 'aws-cdk-lib/aws-logs'
@@ -62,20 +63,18 @@ export class ApiStack extends cdk.Stack {
       }),
     )
 
-    // Lambda function
-    this.handler = new lambda.Function(this, 'ApiHandler', {
+    // Lambda function using esbuild for proper bundling
+    this.handler = new nodejs.NodejsFunction(this, 'ApiHandler', {
       functionName: `design-studio-api-${props.environment}`,
       runtime: lambda.Runtime.NODEJS_20_X,
-      handler: 'dist/index.handler',
-      code: lambda.Code.fromAsset('../apps/api', {
-        bundling: {
-          image: lambda.Runtime.NODEJS_20_X.bundlingImage,
-          command: ['bash', '-c', 'npm install && npm run build'],
-          environment: {
-            NODE_ENV: 'production',
-          },
-        },
-      }),
+      entry: '../apps/api/src/index.ts',
+      handler: 'handler',
+      bundling: {
+        minify: true,
+        sourceMap: true,
+        target: 'node20',
+        externalModules: ['@aws-sdk/*'],
+      },
       memorySize: 512,
       timeout: cdk.Duration.seconds(30),
       role,
