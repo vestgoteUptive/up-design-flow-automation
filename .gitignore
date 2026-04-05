@@ -137,3 +137,15 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# CDK compiled output
+infra/bin/**/*.js
+infra/bin/**/*.d.ts
+infra/bin/**/*.js.map
+infra/lib/**/*.js
+infra/lib/**/*.d.ts
+infra/lib/**/*.js.map
+cdk.out/
+
+# OS files
+.DS_Store
