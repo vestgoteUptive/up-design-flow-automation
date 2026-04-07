@@ -37,9 +37,6 @@ jobs:
       - name: Test
         run: pnpm test
 
-      - name: Build frontend
-        run: pnpm --filter=web build
-
       - name: Build API
         run: pnpm --filter=@design-studio/api build
 
@@ -60,20 +57,29 @@ jobs:
         env:
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
 
+      - name: Build frontend with deployed API URL
+        run: |
+          API_URL=$(aws cloudformation describe-stacks \
+            --stack-name DesignStudioApiStack-dev \
+            --query 'Stacks[0].Outputs[?OutputKey==`ApiEndpoint`].OutputValue' \
+            --output text | sed 's|/$||')
+          echo "Building frontend with API_URL=$API_URL"
+          NEXT_PUBLIC_API_URL=$API_URL pnpm --filter=web build
+
       - name: Sync frontend to S3
         run: |
           BUCKET=$(aws cloudformation describe-stacks \
             --stack-name DesignStudioFrontendStack-dev \
             --query 'Stacks[0].Outputs[?OutputKey==`BucketName`].OutputValue' \
             --output text)
-          
+
           DIST_ID=$(aws cloudformation describe-stacks \
             --stack-name DesignStudioFrontendStack-dev \
             --query 'Stacks[0].Outputs[?OutputKey==`DistributionId`].OutputValue' \
             --output text)
-          
+
           aws s3 sync apps/web/out s3://$BUCKET --delete
-          
+
           aws cloudfront create-invalidation \
             --distribution-id $DIST_ID \
             --paths "/*"

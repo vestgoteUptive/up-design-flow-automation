@@ -6,7 +6,6 @@ import * as cdk from 'aws-cdk-lib'
 import * as s3 from 'aws-cdk-lib/aws-s3'
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront'
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins'
-import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment'
 import { Construct } from 'constructs'
 
 export interface FrontendStackProps extends cdk.StackProps {
@@ -54,14 +53,6 @@ export class FrontendStack extends cdk.Stack {
       ],
       defaultRootObject: 'index.html',
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
-    })
-
-    // Deploy frontend assets (would be the Next.js build output)
-    new s3deploy.BucketDeployment(this, 'FrontendDeployment', {
-      sources: [s3deploy.Source.asset('../apps/web/out')],
-      destinationBucket: this.bucket,
-      distribution: this.distribution,
-      distributionPaths: ['/*'],
     })
 
     // Outputs
