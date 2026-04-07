@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { IdeaStatus } from '@/types'
 import { StatusBadge } from './StatusBadge'
@@ -53,12 +54,14 @@ export function GalleryCard({
       )}
     >
       {/* Thumbnail */}
-      <div className="h-[140px] bg-[--bg-elevated] border-b border-[--border-faint] flex items-center justify-center overflow-hidden">
+      <div className="relative h-[140px] bg-[--bg-elevated] border-b border-[--border-faint] flex items-center justify-center overflow-hidden">
         {thumbnailUrl ? (
-          <img
+          <Image
             src={thumbnailUrl}
             alt={componentName}
-            className="object-contain w-full h-full p-2"
+            fill
+            className="object-contain p-2"
+            unoptimized
           />
         ) : (
           <div className="text-[--text-ghost] font-mono text-[12px]">[Preview]</div>

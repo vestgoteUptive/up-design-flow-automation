@@ -33,17 +33,23 @@ export class FrontendStack extends cdk.Stack {
     // CloudFront distribution
     this.distribution = new cloudfront.Distribution(this, 'FrontendDistribution', {
       defaultBehavior: {
-        origin: new origins.S3Origin(this.bucket),
+        origin: origins.S3BucketOrigin.withOriginAccessControl(this.bucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
         compress: true,
       },
       errorResponses: [
         {
+          httpStatus: 403,
+          responseHttpStatus: 200,
+          responsePagePath: '/index.html',
+          ttl: cdk.Duration.minutes(0),
+        },
+        {
           httpStatus: 404,
           responseHttpStatus: 200,
-          responsePagePath: '/404.html',
-          ttl: cdk.Duration.minutes(5),
+          responsePagePath: '/index.html',
+          ttl: cdk.Duration.minutes(0),
         },
       ],
       defaultRootObject: 'index.html',

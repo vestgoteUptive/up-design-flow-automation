@@ -6,9 +6,7 @@
 import { ReactNode } from 'react'
 
 export function generateStaticParams() {
-  // Return empty array for static export
-  // This route will be handled client-side
-  return []
+  return [{ id: 'index' }]
 }
 
 export default function ProjectLayout({ children }: { children: ReactNode }) {

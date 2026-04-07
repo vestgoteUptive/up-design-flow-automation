@@ -1,8 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'export',
   reactStrictMode: true,
-  // Enable server-side rendering for dynamic routes
-  // Remove 'export' to support server-side features
 }
 
 module.exports = nextConfig

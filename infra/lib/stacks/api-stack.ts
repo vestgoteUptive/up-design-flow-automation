@@ -63,6 +63,13 @@ export class ApiStack extends cdk.Stack {
       }),
     )
 
+    // Explicit log group so we can control retention without deprecated logRetention prop
+    const logGroup = new logs.LogGroup(this, 'ApiHandlerLogGroup', {
+      logGroupName: `/aws/lambda/design-studio-api-${props.environment}`,
+      retention: logs.RetentionDays.ONE_MONTH,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    })
+
     // Lambda function using esbuild for proper bundling
     this.handler = new nodejs.NodejsFunction(this, 'ApiHandler', {
       functionName: `design-studio-api-${props.environment}`,
@@ -84,7 +91,7 @@ export class ApiStack extends cdk.Stack {
         BEDROCK_MODEL_ID: 'claude-sonnet-4-20250514',
         ENVIRONMENT: props.environment,
       },
-      logRetention: logs.RetentionDays.ONE_MONTH,
+      logGroup,
     })
 
     // API Gateway
