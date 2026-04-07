@@ -6,6 +6,7 @@
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb'
 import { QueryCommand, PutCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb'
 import type { ComponentDependency, ComponentDependencyType } from '@design-studio/types'
+import { getTableName } from './client'
 
 export class ComponentDependenciesRepository {
   constructor(private client: DynamoDBDocumentClient) {}
@@ -13,7 +14,7 @@ export class ComponentDependenciesRepository {
   async createDependency(dependency: ComponentDependency): Promise<void> {
     await this.client.send(
       new PutCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         Item: {
           PK: `COMPONENT#${dependency.componentId}#DEPS`,
           SK: `DEPENDS_ON#${dependency.dependsOnId}`,
@@ -27,7 +28,7 @@ export class ComponentDependenciesRepository {
   async getDependencies(componentId: string): Promise<ComponentDependency[]> {
     const result = await this.client.send(
       new QueryCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
         ExpressionAttributeValues: {
           ':pk': `COMPONENT#${componentId}#DEPS`,
@@ -42,7 +43,7 @@ export class ComponentDependenciesRepository {
     // Components that depend ON this component
     const result = await this.client.send(
       new QueryCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         IndexName: 'GSI1',
         KeyConditionExpression: 'GSI1PK = :pk AND begins_with(GSI1SK, :sk)',
         ExpressionAttributeValues: {
@@ -60,7 +61,7 @@ export class ComponentDependenciesRepository {
   ): Promise<ComponentDependency[]> {
     const result = await this.client.send(
       new QueryCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
         FilterExpression: 'dependencyType = :type',
         ExpressionAttributeValues: {
@@ -76,7 +77,7 @@ export class ComponentDependenciesRepository {
   async removeDependency(componentId: string, dependsOnId: string): Promise<void> {
     await this.client.send(
       new DeleteCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         Key: {
           PK: `COMPONENT#${componentId}#DEPS`,
           SK: `DEPENDS_ON#${dependsOnId}`,
@@ -89,7 +90,7 @@ export class ComponentDependenciesRepository {
     const creates = dependencies.map((dep) =>
       this.client.send(
         new PutCommand({
-          TableName: 'design-studio-table',
+          TableName: getTableName(),
           Item: {
             PK: `COMPONENT#${dep.componentId}#DEPS`,
             SK: `DEPENDS_ON#${dep.dependsOnId}`,

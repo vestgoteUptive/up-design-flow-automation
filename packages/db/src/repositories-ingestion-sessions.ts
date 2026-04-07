@@ -6,6 +6,7 @@
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb'
 import { QueryCommand, PutCommand, UpdateCommand, GetCommand } from '@aws-sdk/lib-dynamodb'
 import type { IngestionSession } from '@design-studio/types'
+import { getTableName } from './client'
 
 export class IngestionSessionsRepository {
   constructor(private client: DynamoDBDocumentClient) {}
@@ -18,7 +19,7 @@ export class IngestionSessionsRepository {
 
     await this.client.send(
       new PutCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         Item: {
           PK: `PROJECT#${session.projectId}#INGESTIONS`,
           SK: `SESSION#${session.id}`,
@@ -32,7 +33,7 @@ export class IngestionSessionsRepository {
   async getById(projectId: string, sessionId: string): Promise<IngestionSession | null> {
     const result = await this.client.send(
       new GetCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         Key: {
           PK: `PROJECT#${projectId}#INGESTIONS`,
           SK: `SESSION#${sessionId}`,
@@ -45,7 +46,7 @@ export class IngestionSessionsRepository {
   async listByProject(projectId: string): Promise<IngestionSession[]> {
     const result = await this.client.send(
       new QueryCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
         ExpressionAttributeValues: {
           ':pk': `PROJECT#${projectId}#INGESTIONS`,
@@ -92,7 +93,7 @@ export class IngestionSessionsRepository {
 
     await this.client.send(
       new UpdateCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         Key: {
           PK: `PROJECT#${projectId}#INGESTIONS`,
           SK: `SESSION#${sessionId}`,
@@ -109,7 +110,7 @@ export class IngestionSessionsRepository {
   async getLatestSession(projectId: string): Promise<IngestionSession | null> {
     const result = await this.client.send(
       new QueryCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
         ExpressionAttributeValues: {
           ':pk': `PROJECT#${projectId}#INGESTIONS`,

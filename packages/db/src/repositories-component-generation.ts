@@ -6,6 +6,7 @@
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb'
 import { QueryCommand, PutCommand, UpdateCommand, GetCommand } from '@aws-sdk/lib-dynamodb'
 import type { ComponentGeneration, IngestionStatus } from '@design-studio/types'
+import { getTableName } from './client'
 
 export class ComponentGenerationRepository {
   constructor(private client: DynamoDBDocumentClient) {}
@@ -18,7 +19,7 @@ export class ComponentGenerationRepository {
 
     await this.client.send(
       new PutCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         Item: {
           PK: `INGESTED#${generation.ingestedComponentId}`,
           SK: `GENERATION#v${generation.version}`,
@@ -32,7 +33,7 @@ export class ComponentGenerationRepository {
   async getLatestVersion(ingestedComponentId: string): Promise<ComponentGeneration | null> {
     const result = await this.client.send(
       new QueryCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
         ExpressionAttributeValues: {
           ':pk': `INGESTED#${ingestedComponentId}`,
@@ -48,7 +49,7 @@ export class ComponentGenerationRepository {
   async getVersion(ingestedComponentId: string, version: number): Promise<ComponentGeneration | null> {
     const result = await this.client.send(
       new GetCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         Key: {
           PK: `INGESTED#${ingestedComponentId}`,
           SK: `GENERATION#v${version}`,
@@ -61,7 +62,7 @@ export class ComponentGenerationRepository {
   async listVersions(ingestedComponentId: string): Promise<ComponentGeneration[]> {
     const result = await this.client.send(
       new QueryCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
         ExpressionAttributeValues: {
           ':pk': `INGESTED#${ingestedComponentId}`,
@@ -80,7 +81,7 @@ export class ComponentGenerationRepository {
   ): Promise<void> {
     await this.client.send(
       new UpdateCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         Key: {
           PK: `INGESTED#${ingestedComponentId}`,
           SK: `GENERATION#v${version}`,
@@ -104,7 +105,7 @@ export class ComponentGenerationRepository {
   ): Promise<void> {
     await this.client.send(
       new UpdateCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         Key: {
           PK: `INGESTED#${ingestedComponentId}`,
           SK: `GENERATION#v${latestVersion}`,
@@ -129,7 +130,7 @@ export class ComponentGenerationRepository {
   ): Promise<void> {
     await this.client.send(
       new UpdateCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         Key: {
           PK: `INGESTED#${ingestedComponentId}`,
           SK: `GENERATION#v${version}`,

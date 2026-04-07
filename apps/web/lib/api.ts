@@ -238,10 +238,30 @@ const ingestion = {
       .json<{ selectedCount: number }>()
   },
 
-  async startSession(projectId: string, sourceType: string, sourceData: unknown): Promise<{ id: string }> {
+  async startSession(
+    projectId: string,
+    sourceType: string,
+    sourceData: unknown,
+  ): Promise<{ session: { id: string; status: string; totalComponentsFound: number }; components: IngestedComponent[]; tokensFound: number }> {
     return kyClient
       .post(`projects/${projectId}/ingestion/session`, { json: { sourceType, sourceData } })
-      .json<{ id: string }>()
+      .json()
+  },
+
+  async generateComponents(
+    projectId: string,
+  ): Promise<{ message: string; total: number; succeeded: number; failed: number }> {
+    return kyClient
+      .post(`projects/${projectId}/ingestion/generate`)
+      .json()
+  },
+
+  async seedData(
+    projectId: string,
+  ): Promise<{ message: string; sessionId: string; componentsCreated: number; tokensCreated: number; components: Array<{ id: string; name: string; status: string }> }> {
+    return kyClient
+      .post(`projects/${projectId}/ingestion/seed`)
+      .json()
   },
 
   async listComponents(projectId: string): Promise<Array<IngestedComponent & { latestGeneration?: ComponentGeneration }>> {

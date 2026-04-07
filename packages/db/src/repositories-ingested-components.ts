@@ -6,6 +6,7 @@
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb'
 import { QueryCommand, PutCommand, UpdateCommand, GetCommand } from '@aws-sdk/lib-dynamodb'
 import type { IngestedComponent, IngestionStatus } from '@design-studio/types'
+import { getTableName } from './client'
 
 export class IngestedComponentsRepository {
   constructor(private client: DynamoDBDocumentClient) {}
@@ -13,7 +14,7 @@ export class IngestedComponentsRepository {
   async create(component: IngestedComponent): Promise<IngestedComponent> {
     await this.client.send(
       new PutCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         Item: {
           PK: `PROJECT#${component.projectId}#INGESTED`,
           SK: `COMPONENT#${component.id}`,
@@ -28,7 +29,7 @@ export class IngestedComponentsRepository {
   async getById(projectId: string, componentId: string): Promise<IngestedComponent | null> {
     const result = await this.client.send(
       new GetCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         Key: {
           PK: `PROJECT#${projectId}#INGESTED`,
           SK: `COMPONENT#${componentId}`,
@@ -41,7 +42,7 @@ export class IngestedComponentsRepository {
   async listByIngestion(projectId: string, ingestionId: string): Promise<IngestedComponent[]> {
     const result = await this.client.send(
       new QueryCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
         FilterExpression: 'ingestionId = :ingestionId',
         ExpressionAttributeValues: {
@@ -57,7 +58,7 @@ export class IngestedComponentsRepository {
   async listByProject(projectId: string): Promise<IngestedComponent[]> {
     const result = await this.client.send(
       new QueryCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
         ExpressionAttributeValues: {
           ':pk': `PROJECT#${projectId}#INGESTED`,
@@ -75,7 +76,7 @@ export class IngestedComponentsRepository {
   ): Promise<void> {
     await this.client.send(
       new UpdateCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         Key: {
           PK: `PROJECT#${projectId}#INGESTED`,
           SK: `COMPONENT#${componentId}`,
@@ -100,7 +101,7 @@ export class IngestedComponentsRepository {
     const updates = componentIds.map((id) =>
       this.client.send(
         new UpdateCommand({
-          TableName: 'design-studio-table',
+          TableName: getTableName(),
           Key: {
             PK: `PROJECT#${projectId}#INGESTED`,
             SK: `COMPONENT#${id}`,

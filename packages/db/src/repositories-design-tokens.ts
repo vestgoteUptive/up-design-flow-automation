@@ -6,6 +6,7 @@
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb'
 import { QueryCommand, PutCommand, UpdateCommand, GetCommand } from '@aws-sdk/lib-dynamodb'
 import type { DesignToken, DesignTokenType } from '@design-studio/types'
+import { getTableName } from './client'
 
 export class DesignTokensRepository {
   constructor(private client: DynamoDBDocumentClient) {}
@@ -19,7 +20,7 @@ export class DesignTokensRepository {
 
     await this.client.send(
       new PutCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         Item: {
           PK: `PROJECT#${token.projectId}#TOKENS`,
           SK: `TOKEN#${token.id}`,
@@ -33,7 +34,7 @@ export class DesignTokensRepository {
   async getById(projectId: string, tokenId: string): Promise<DesignToken | null> {
     const result = await this.client.send(
       new GetCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         Key: {
           PK: `PROJECT#${projectId}#TOKENS`,
           SK: `TOKEN#${tokenId}`,
@@ -46,7 +47,7 @@ export class DesignTokensRepository {
   async listByProject(projectId: string): Promise<DesignToken[]> {
     const result = await this.client.send(
       new QueryCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
         ExpressionAttributeValues: {
           ':pk': `PROJECT#${projectId}#TOKENS`,
@@ -60,7 +61,7 @@ export class DesignTokensRepository {
   async listByType(projectId: string, type: DesignTokenType): Promise<DesignToken[]> {
     const result = await this.client.send(
       new QueryCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
         FilterExpression: '#type = :type',
         ExpressionAttributeNames: {
@@ -79,7 +80,7 @@ export class DesignTokensRepository {
   async incrementUsage(projectId: string, tokenId: string, increment: number = 1): Promise<void> {
     await this.client.send(
       new UpdateCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         Key: {
           PK: `PROJECT#${projectId}#TOKENS`,
           SK: `TOKEN#${tokenId}`,
@@ -97,7 +98,7 @@ export class DesignTokensRepository {
     const creates = tokens.map((token) =>
       this.client.send(
         new PutCommand({
-          TableName: 'design-studio-table',
+          TableName: getTableName(),
           Item: {
             PK: `PROJECT#${token.projectId}#TOKENS`,
             SK: `TOKEN#${token.id}`,
@@ -127,7 +128,7 @@ export class ComponentTokensRepository {
   ): Promise<void> {
     await this.client.send(
       new PutCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         Item: {
           PK: `COMPONENT#${componentId}#TOKENS`,
           SK: `TOKEN#${tokenId}`,
@@ -143,7 +144,7 @@ export class ComponentTokensRepository {
   async getTokensForComponent(componentId: string): Promise<{ tokenId: string; usageCount: number }[]> {
     const result = await this.client.send(
       new QueryCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
         ExpressionAttributeValues: {
           ':pk': `COMPONENT#${componentId}#TOKENS`,
@@ -161,7 +162,7 @@ export class ComponentTokensRepository {
     // Query using GSI1 - need to scan because of the design
     const result = await this.client.send(
       new QueryCommand({
-        TableName: 'design-studio-table',
+        TableName: getTableName(),
         KeyConditionExpression: 'GSI1PK = :pk AND begins_with(GSI1SK, :sk)',
         ExpressionAttributeValues: {
           ':pk': `TOKEN#${tokenId}#COMPONENTS`,
@@ -179,7 +180,7 @@ export class ComponentTokensRepository {
     const links = tokens.map((token) =>
       this.client.send(
         new PutCommand({
-          TableName: 'design-studio-table',
+          TableName: getTableName(),
           Item: {
             PK: `COMPONENT#${componentId}#TOKENS`,
             SK: `TOKEN#${token.tokenId}`,

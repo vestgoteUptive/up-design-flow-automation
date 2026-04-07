@@ -50,10 +50,12 @@ import {
   getIngestionComponentHandler,
   selectComponentsHandler,
   startIngestionSessionHandler,
+  generateComponentsHandler,
   regenerateComponentHandler,
   listComponentsHandler,
   getComponentsNeedingUpdateHandler,
   getProjectTokensHandler,
+  seedIngestionHandler,
 } from './handlers/ingestion'
 
 /**
@@ -103,9 +105,11 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
   // Ingestion & Tracking routes
   if (path.match(/^\/projects\/[^/]+\/ingestion$/) && httpMethod === 'GET') return getIngestionResultsHandler(event)
-  if (path.match(/^\/projects\/[^/]+\/ingestion\/[^/]+$/) && httpMethod === 'GET') return getIngestionComponentHandler(event)
   if (path.match(/^\/projects\/[^/]+\/ingestion\/select$/) && httpMethod === 'POST') return selectComponentsHandler(event)
   if (path.match(/^\/projects\/[^/]+\/ingestion\/session$/) && httpMethod === 'POST') return startIngestionSessionHandler(event)
+  if (path.match(/^\/projects\/[^/]+\/ingestion\/generate$/) && httpMethod === 'POST') return generateComponentsHandler(event)
+  if (path.match(/^\/projects\/[^/]+\/ingestion\/seed$/) && httpMethod === 'POST') return seedIngestionHandler(event)
+  if (path.match(/^\/projects\/[^/]+\/ingestion\/[^/]+$/) && httpMethod === 'GET') return getIngestionComponentHandler(event)
   if (path.match(/^\/projects\/[^/]+\/components\/needs-update$/) && httpMethod === 'GET') return getComponentsNeedingUpdateHandler(event)
   if (path.match(/^\/projects\/[^/]+\/components$/) && httpMethod === 'GET') return listComponentsHandler(event)
   if (path.match(/^\/projects\/[^/]+\/components\/[^/]+\/regenerate$/) && httpMethod === 'POST') return regenerateComponentHandler(event)
