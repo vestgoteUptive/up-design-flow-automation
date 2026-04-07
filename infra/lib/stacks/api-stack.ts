@@ -105,6 +105,11 @@ export class ApiStack extends cdk.Stack {
         dataTraceEnabled: true,
         metricsEnabled: true,
       },
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowMethods: apigateway.Cors.ALL_METHODS,
+        allowHeaders: ['Content-Type', 'Authorization'],
+      },
     })
 
     // Root resource proxies to Lambda
