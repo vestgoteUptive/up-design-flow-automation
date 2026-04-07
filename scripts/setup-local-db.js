@@ -5,8 +5,11 @@
  * Creates the design-studio table with proper schema and GSIs
  */
 
-const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { CreateTableCommand } = require('@aws-sdk/client-dynamodb');
+// Resolve from packages/db where the SDK is actually installed
+const sdkPath = require.resolve('@aws-sdk/client-dynamodb', {
+  paths: [require('path').join(__dirname, '../packages/db')],
+});
+const { DynamoDBClient, CreateTableCommand } = require(sdkPath);
 
 const client = new DynamoDBClient({
   region: 'eu-north-1',
@@ -40,9 +43,6 @@ const params = {
       Projection: { ProjectionType: 'ALL' },
     },
   ],
-  StreamSpecification: {
-    StreamViewType: 'NEW_AND_OLD_IMAGES',
-  },
 };
 
 async function createTable() {

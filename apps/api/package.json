@@ -7,7 +7,8 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "test": "vitest --passWithNoTests",
-    "dev": "sam local start-api",
+    "dev": "tsx --env-file=../../.env.example src/dev-server.ts",
+    "dev:sam": "sam local start-api",
     "sam:build": "sam build"
   },
   "dependencies": {
@@ -22,9 +23,12 @@
   "devDependencies": {
     "@types/aws-lambda": "^8.10.38",
     "@types/bcryptjs": "^2.4.6",
+    "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22.10.2",
     "@types/uuid": "^9.0.8",
+    "express": "^5.2.1",
+    "tsx": "^4.21.0",
     "typescript": "^5.7.2",
     "vitest": "^1.6.0"
   }

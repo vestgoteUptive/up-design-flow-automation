@@ -23,7 +23,7 @@
     "typecheck": "pnpm --recursive typecheck",
     "clean": "pnpm --recursive clean && rm -rf node_modules",
     "start:web": "cd apps/web && pnpm dev",
-    "start:api": "cd apps/api && pnpm dev",
+    "start:api": "pnpm --filter=@design-studio/api dev",
     "start:infra": "cd infra && pnpm synth"
   },
   "devDependencies": {
